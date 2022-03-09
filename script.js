@@ -8,7 +8,7 @@ let wordsLength
 let canvasX
 let canvasY
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
-let numTries = 1000
+let numTries = 10000
 let sol
 
 function main() {
@@ -31,16 +31,9 @@ function main() {
   // Start our loop through random assortments of words[] to try various solutions
   for (let k = 0; k < numTries; k++) {
 
-    words.sort(function(a, b){return b.length - a.length}) //Array of all given words in order of their sizes
+    //words.sort(function(a, b){return b.length - a.length}) //Array of all given words in order of their sizes
 
-    //FIX THIS SHIT
-    //words = words.sort(() => Math.random() - 0.5)
-
-    // let j, i //Shuffling the array
-    // for (i = words.length - 1; i > 0; i--) {
-    //     j = Math.floor(Math.random() * (i + 1));
-    //     [words[i], words[j]] = [words[j], words[i]]
-    // }
+    shuffleArr(words)
 
     sol = new solutionState()
 
@@ -66,8 +59,7 @@ function main() {
       // [xxxxx, xxxxx, xxxxx, orphan1, orphan2] i--, oc++, i = 3, oc = 1     1 >= 2 false
       // [xxxxx, xxxxx, xxxxx, orphan2, orphan1] i--, oc++, i = 3, oc = 2     2 >= 2 true, so break
       if (!findHomeForWord(words[i])) {
-        words.push(words.splice(i,1))
-
+        words.push(words.splice(i,1)[0]) //Pushes word that couldnt be added to the end of the array
         i--
         orphanCounter++
       } else {
@@ -305,6 +297,18 @@ function print2dArr(arr) {
     }
   }
   alert(msg)
+}
+
+function shuffleArr(arr) {
+  var i = arr.length;
+  if ( i == 0 ) return false;
+  while ( --i ) {
+     var j = Math.floor( Math.random() * ( i + 1 ) );
+     var tempi = arr[i];
+     var tempj = arr[j];
+     arr[i] = tempj;
+     arr[j] = tempi;
+   }
 }
 
 class solutionState {
