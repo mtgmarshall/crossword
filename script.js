@@ -1,12 +1,12 @@
 let words                   // The user's input array of words for the crossword
 let gridCenter              // The center of logicArr (also just the total word length)
 let topFiveSols = []
-let minX, maxX, minY, maxY  // (minX, minY) = top left corner
+let chosenSolution = 0
 let dispArr                 // The array used to display
 let notReady = true
 let wordsLength
 let canvasX
-let canvasY = 720
+let canvasY
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 let numTries = 1000
 let sol
@@ -14,15 +14,13 @@ let sol
 function main() {
 
 //CONSIDER WHEN YOU DONT HAVE 5 SOLUTIONS
+  topFiveSols = []
   for (let i = 0; i < 5; i++) {
     topFiveSols.push(new solutionState(0, 0, 0, 0, 100000000, 0, []))
   }
 
   let input = document.getElementById("myInput").value
   words = input.split(", ")
-
-
-
 
   wordsLength = 0 //Determining max grid size as all words together
   for (let i = 0; i < words.length; i++) {
@@ -99,29 +97,9 @@ function main() {
 
   } // end of numTries loop
 
-  //Output in some way the orphans of the solutions
-  for (let i = 0; i < topFiveSols[0].orphans.length; i++) {
-    //alert(topFiveSols[0].orphans[i])
-  }
-  // for (let j = i+1; j < words.length; j++) {
-  //    errMessage += words[j] + "  "
-  // }
-
   // our solution has been chosen:
-  minX = topFiveSols[0].minX
-  maxX = topFiveSols[0].maxX
-  minY = topFiveSols[0].minY
-  maxY = topFiveSols[0].maxY
 
-  dispArr = new Array(maxX - minX + 1).fill(0).map(() => new Array(maxY - minY + 1).fill(0)) // <-- set up dispArr to be what we draw off of
-  for (let i = 0; i <= maxX - minX; i++) { // Populates dispArr with the appropriate values from logicArr
-    for (let j = 0; j <= maxY - minY; j++) {
-      dispArr[i][j] = topFiveSols[0].logicArr[minX+i][minY+j]
-    }
-  }
-
-  setupCanvas(); // We are ready to draw
-
+  updateDispArr(topFiveSols[chosenSolution]) //Updates dispArr and starts drawing
 }
 
 function findHomeForWord(word) { //Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
@@ -238,10 +216,26 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
   }
 }
 
+function updateDispArr(sol) {
+  dispArr = new Array(sol.maxX - sol.minX + 1).fill(0).map(() => new Array(sol.maxY - sol.minY + 1).fill(0)) // <-- set up dispArr to be what we draw off of
+  for (let i = 0; i <= sol.maxX - sol.minX; i++) { // Populates dispArr with the appropriate values from logicArr
+    for (let j = 0; j <= sol.maxY - sol.minY; j++) {
+      dispArr[i][j] = sol.logicArr[sol.minX+i][sol.minY+j]
+    }
+  }
+
+setupCanvas()
+
+}
+
 function setupCanvas() {
 
-  let numCols = maxX - minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
-  let numRows = maxY - minY + 1
+  canvasY = windowHeight * 0.8 // Automatically adjusts the canvas to be 80% of the window size
+
+  pixelDensity(1)
+
+  let numCols = topFiveSols[chosenSolution].maxX - topFiveSols[chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
+  let numRows = topFiveSols[chosenSolution].maxY - topFiveSols[chosenSolution].minY + 1
 
   canvasX = canvasY / numRows * numCols
 
@@ -257,17 +251,18 @@ function draw() {
   }
   background(0)
 
-  let numCols = maxX - minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
-  let numRows = maxY - minY + 1
+  let numCols = topFiveSols[chosenSolution].maxX - topFiveSols[chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
+  let numRows = topFiveSols[chosenSolution].maxY - topFiveSols[chosenSolution].minY + 1
   squareWidth = canvasX / numCols; // Calculates the size of each grid for drawing
   squareHeight = canvasY / numRows;
+
   textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
   textSize(textValue) // Sets the textSize to our calculated best text size
 
+  fill(255)
   for (let i = 0; i < numCols; i++){ //Creates the grid
     for (let j = 0; j < numRows; j++){
-    fill(255)
-    rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+      rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
     }
   }
 
@@ -275,7 +270,7 @@ function draw() {
   for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
     for (j = 0; j < numRows; j++) {
       if (dispArr[i][j] != 0) {
-        text(dispArr[i][j],i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+        text(dispArr[i][j], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
       }
       else {
         rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
@@ -283,6 +278,25 @@ function draw() {
     }
   }
 
+}
+
+// Prints the 2d array as an alert message, primarily for debugging
+function print2dArr(arr) {
+  let msg = ""
+  let i, j
+  for (i = 0; i < arr[0].length; i++) {
+    for (j = 0; j < arr.length; j++) {
+      if (i < arr[0].length - 1) {
+        msg += arr[j][i] + " "
+      } else {
+        msg += arr[j][i]
+      }
+    }
+    if (i < arr[0].length - 1) {
+      msg += "\n"
+    }
+  }
+  alert(msg)
 }
 
 class solutionState {
