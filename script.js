@@ -230,17 +230,24 @@ setupCanvas()
 
 function setupCanvas() {
 
-  canvasY = windowHeight * 0.8 // Automatically adjusts the canvas to be 80% of the window size
 
-  pixelDensity(1)
+
+
 
   let numCols = topFiveSols[chosenSolution].maxX - topFiveSols[chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
   let numRows = topFiveSols[chosenSolution].maxY - topFiveSols[chosenSolution].minY + 1
 
-  canvasX = canvasY / numRows * numCols
+  if (windowHeight < windowWidth) {
+    canvasY = windowHeight * 0.8 // Automatically adjusts the canvas to be 80% of the window's height
+    canvasX = canvasY / numRows * numCols
+  } else {
+    canvasX = windowWidth // Automatically adjusts the canvas to the window's width
+    canvasY = canvasX / numCols * numRows
+  }
 
   createCanvas(canvasX + 1, canvasY + 1)
   textFont('Courier')
+  pixelDensity(1)
 
   notReady = false;
 }
