@@ -245,7 +245,8 @@ function setupCanvas() {
     canvasY = canvasX / numCols * numRows
   }
 
-  createCanvas(canvasX + 1, canvasY + 1)
+  let canvas = createCanvas(canvasX + 1, canvasY + 1)
+  canvas.parent('canvas')
   textFont('Courier')
   pixelDensity(1)
 

@@ -5,10 +5,11 @@
 <html>
 <title>Crossword Maker</title>
 <head>
-  <h1>Crossword Maker</h1>
-  <h2>
-  <input type="text" placeholder="Words to use seperated by &ldquo;, &ldquo;" id="myInput" size="60" value="values, to, test">
-  <button type="button" onclick="main();">Create</button>
+  <h1 style="text-align:center">Crossword Maker<span style="float:right"><a style="font-size:16px" href="https://mtgmarshall.github.io">Home</a></span></h1>
+  <h2 style="text-align:center">
+  <input type="text" placeholder="Words to use seperated by &ldquo;, &ldquo;" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" id="myInput" size="60" value="values, to, test">
+  <button type="button" id="myButton" onclick="main();">Create</button>
   </h2>
+  <h3 id="canvas" style="text-align:center"></h3>
 </head>
 </html>
