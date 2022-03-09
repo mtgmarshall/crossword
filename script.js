@@ -3,9 +3,12 @@ let logicArr;               // The array used for behind the scenes logic
 let gridCenter;             // The center of logicArr (also just the total word length)
 let minX, maxX, minY, maxY  // (minX, minY) = top left corner
 let dispArr;                // The array used to display
-let logicIndex = 0;         // Current position in the logicArr
-let notReady = true;
+let logicIndex = 0          // Current position in the logicArr
+let notReady = true
 let wordsLength
+let canvasX = 560
+let canvasY = 560
+let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 
 function main() {
   let input = document.getElementById("myInput").value
@@ -37,10 +40,16 @@ function main() {
     }
   }
 
+  //alert(minX + "  " + maxX + "  " + minY + "  " + maxY)
+
+  dispArr = new Array(maxX - minX + 1).fill(0).map(() => new Array(maxY - minY + 1).fill(0)) // <-- set up dispArr to be what we draw off of
+  for (let i = 0; i <= maxX - minX; i++) { // Populates dispArr with the appropriate values from logicArr
+    for (let j = 0; j <= maxY - minY; j++) {
+      dispArr[i][j] = logicArr[minX+i][minY+j]
+    }
+  }
+
   notReady = false; //wordIsOrphaned;
-
-  //dispArr = new Array() <-- set up dispArr to be what we draw off of
-
 }
 
 function findHomeForWord(word) { //Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
@@ -141,14 +150,14 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
   if (x < minX) { //These four if statements update max and min used values of the LogicArray dimensions
     minX = x
   }
-  if (x + word.length * dx > maxX) {
-    maxX = x + word.length * dx
+  if (x + (word.length - 1) * dx > maxX) {
+    maxX = x + (word.length - 1) * dx
   }
   if (y < minY) {
     minY = y
   }
-  if (y + word.length * dy > maxY) {
-    maxY = y + word.length * dy
+  if (y + (word.length - 1) * dy > maxY) {
+    maxY = y + (word.length - 1) * dy
   }
 
   logicIndex++; //Increment through the words array
@@ -156,8 +165,7 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
 }
 
 function setup() {
-  createCanvas(561, 561)
-  textSize(20)
+  createCanvas(canvasX + 1, canvasY + 1)
 }
 
 function draw() {
@@ -166,18 +174,27 @@ function draw() {
   }
   background(0)
 
-  for (let i = 0; i < 28; i++){ //Creates the grid
-    for (let j = 0; j < 28; j++){
+  let numCols = maxX - minX + 1
+  let numRows = maxY - minY + 1
+  squareWidth = canvasX / numCols;
+  squareHeight = canvasY / numRows;
+  textValue = min(squareWidth, squareHeight)
+  textSize(textValue)
+
+  //alert(squareWidth + "  " + squareHeight + "  " + textSize)
+
+  for (let i = 0; i < numCols; i++){ //Creates the grid
+    for (let j = 0; j < numRows; j++){
     fill(255)
-    rect(20*i, 20*j, 20, 20)
+    rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
     }
   }
 
   fill(0)
-  for (i = 0; i < wordsLength*2; i++) { //Inputs the values in logicArr into the grid
-    for (j = 0; j < wordsLength*2; j++) {
-      if (logicArr[i][j] != 0) {
-        text(logicArr[i][j],i*20+5, j*20+18)
+  for (i = 0; i < numCols; i++) { //Inputs the values in logicArr into the grid
+    for (j = 0; j < numRows; j++) {
+      if (dispArr[i][j] != 0) {
+        text(dispArr[i][j],i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
       }
     }
   }
