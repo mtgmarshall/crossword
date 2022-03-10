@@ -6,7 +6,6 @@ let worstSol                // stores the solution with the worst fitness
 let solType = 0             // topFive (=0) or worst (=1)
 let chosenSolution = 0      // determines which solution to look at
 let dispArr                 // The array used to display
-let arraySearchMethod
 let notReady = true
 let wordsLength
 let canvasX
@@ -37,7 +36,6 @@ function main() {
   for (let k = 0; k < numTries; k++) {
 
     shuffleArr(words)
-    arraySearchMethod = floor(random() * 5)
 
     sol = new solutionState()
 
@@ -50,7 +48,7 @@ function main() {
 
     sol.orphans = []
 
-    sol.searchMethod = arraySearchMethod
+    sol.searchMethod = floor(random() * 5)
 
     addWord(words[0], gridCenter, gridCenter, "across")
 
@@ -108,7 +106,7 @@ function main() {
 
 function findHomeForWord(word) { //Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
 
-  switch (arraySearchMethod) {
+  switch (sol.searchMethod) {
     case 0: // Starts in the top left corner to find valid points
       for (let i = sol.minX; i <= sol.maxX; i++) { //Checking if any position has valid placement
         for (let j = sol.minY; j <= sol.maxY; j++) {
@@ -297,26 +295,37 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
 }
 
 function changeDisplayedSolution(type, choice) { // Receives arguments from button to decide which solution to display
-
-
   solType = type
   chosenSolution = choice
-  updateDispArr(storedSols[solType][chosenSolution])
+  updateDispArr()
 }
 
-function updateDispArr(sol) {
+function updateDispArr() {
 
-  if (sol.orphans.length > 0) {
-    h3.innerHTML = "Words that couldnt be used: " + sol.orphans
+  if (storedSols[solType][chosenSolution].orphans.length > 0) {
+    h3.innerHTML = "Words that couldnt be used: " + storedSols[solType][chosenSolution].orphans
     h3.removeAttribute('hidden')
   } else{
     h3.setAttribute('hidden', true)
   }
 
-  dispArr = new Array(sol.maxX - sol.minX + 1).fill(0).map(() => new Array(sol.maxY - sol.minY + 1).fill(0)) // <-- set up dispArr to be what we draw off of
-  for (let i = 0; i <= sol.maxX - sol.minX; i++) { // Populates dispArr with the appropriate values from logicArr
-    for (let j = 0; j <= sol.maxY - sol.minY; j++) {
-      dispArr[i][j] = sol.logicArr[sol.minX+i][sol.minY+j]
+  dispArr = new Array(storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1).fill(0).map(() => new Array(storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1).fill(0).map(() => new Array(2).fill(0))) // <-- set up dispArr to be what we draw off of
+  for (let i = 0; i <= storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX; i++) { // Populates dispArr with the appropriate values from logicArr
+    for (let j = 0; j <= storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY; j++) {
+      dispArr[i][j][0] = storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j]
+    }
+  }
+
+  let clueNum = 1;
+  for (let j = 0; j <= storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY; j++) { // Populates dispArr with the appropriate values from logicArr
+    for (let i = 0; i <= storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX; i++) {
+      if (dispArr[i][j][0] != 0 && (i == 0 || dispArr[i - 1][j][0] == 0) && i < storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX && dispArr[i + 1][j][0] != 0) {
+        dispArr[i][j][1] = "" + clueNum
+        clueNum++
+      } else if (dispArr[i][j][0] != 0 && (j == 0 || dispArr[i][j - 1][0] == 0) && j < storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY && dispArr[i][j + 1][0] != 0) {
+        dispArr[i][j][1] = "" + clueNum
+        clueNum++
+      }
     }
   }
 
@@ -339,7 +348,6 @@ function setupCanvas() {
   let canvas = createCanvas(canvasX + 1, canvasY + 1)
   canvas.parent('canvas')
   textFont('Courier')
-  pixelDensity(1)
 
   if (myButton1.getAttribute('hidden') != null) {
     h5.removeAttribute('hidden')
@@ -369,11 +377,10 @@ function draw() {
 
   let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
   let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
-  squareWidth = canvasX / numCols; // Calculates the size of each grid for drawing
-  squareHeight = canvasY / numRows;
+  squareWidth = canvasX / numCols / pixelDensity(); // Calculates the size of each grid for drawing
+  squareHeight = canvasY / numRows / pixelDensity();
 
   textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
-  textSize(textValue) // Sets the textSize to our calculated best text size
 
   fill(255)
   for (let i = 0; i < numCols; i++){ //Creates the grid
@@ -385,11 +392,16 @@ function draw() {
   fill(0)
   for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
     for (j = 0; j < numRows; j++) {
-      if (dispArr[i][j] != 0) {
-        text(dispArr[i][j], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
-      }
-      else {
+      textSize(textValue) // Sets the textSize to our calculated best text size
+      if (dispArr[i][j][0] != 0) {
+        text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+      } else {
         rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+      }
+
+      textSize(textValue / 4) // Sets the textSize to our calculated best text size
+      if (dispArr[i][j][1] != 0) {
+        text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
       }
     }
   }
