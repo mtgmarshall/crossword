@@ -1,26 +1,23 @@
 let words                   // The user's input array of words for the crossword
 let gridCenter              // The center of logicArr (also just the total word length)
-let topFiveSols = []
-let chosenSolution = 0
+let storedSols              // stores topFiveSols and worstSol
+let topFiveSols = []        // stores the top five solutions based on fitness
+let worstSol                // stores the solution with the worst fitness
+let solType = 0             // topFive (=0) or worst (=1)
+let chosenSolution = 0      // determines which solution to look at
 let dispArr                 // The array used to display
+let arraySearchMethod
 let notReady = true
 let wordsLength
 let canvasX
 let canvasY
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
-let numTries = 10000
+let numTries = 1000
 let sol
 
 function main() {
 
-//CONSIDER WHEN YOU DONT HAVE 5 SOLUTIONS
-  topFiveSols = []
-  for (let i = 0; i < 5; i++) {
-    topFiveSols.push(new solutionState(0, 0, 0, 0, 100000000, 0, []))
-  }
-
-  let input = document.getElementById("myInput").value
-  words = input.split(", ")
+  words = myInput.value.split(" ")
 
   wordsLength = 0 //Determining max grid size as all words together
   for (let i = 0; i < words.length; i++) {
@@ -28,12 +25,19 @@ function main() {
   }
   gridCenter = wordsLength
 
+  topFiveSols = [] // sets up topFiveSols and worstSol to the track the 5 best, and 1 worst solutions
+  worstSol = new solutionState(0, 0, 0, 0, -1, 0, [], -1)
+  worstSol.logicArr = new Array(wordsLength*2).fill(0).map(() => new Array(wordsLength*2).fill(0))
+  for (let i = 0; i < 5; i++) {
+    topFiveSols.push(new solutionState(0, 0, 0, 0, 100000000, 0, [], -1))
+    topFiveSols[i].logicArr = new Array(wordsLength*2).fill(0).map(() => new Array(wordsLength*2).fill(0))
+  }
+
   // Start our loop through random assortments of words[] to try various solutions
   for (let k = 0; k < numTries; k++) {
 
-    //words.sort(function(a, b){return b.length - a.length}) //Array of all given words in order of their sizes
-
     shuffleArr(words)
+    arraySearchMethod = floor(random() * 5)
 
     sol = new solutionState()
 
@@ -45,6 +49,8 @@ function main() {
     sol.logicArr = new Array(wordsLength*2).fill(0).map(() => new Array(wordsLength*2).fill(0)) //Declaring the array used for behind the scenes logic
 
     sol.orphans = []
+
+    sol.searchMethod = arraySearchMethod
 
     addWord(words[0], gridCenter, gridCenter, "across")
 
@@ -78,37 +84,119 @@ function main() {
 
     sol.fitness = pow(sol.maxX - sol.minX + 1, 2) + pow(sol.maxY - sol.minY + 1, 2) + pow((sol.maxX - sol.minX) - (sol.maxY - sol.minY), 2) * 2 + 10000 * numOrphans
 
-    for (let j = 0; j < topFiveSols.length; j++) {
-      if (sol.fitness < topFiveSols[j].fitness) {
-        //alert(sol.fitness)
+    if (sol.fitness > worstSol.fitness) { // Checks if this solution is worse than the worst solution
+      worstSol = sol
+    }
+
+    for (let j = 0; j < topFiveSols.length; j++) { // Checks if this solution is better than any of the top 5 solutions
+      if (arraysEqual(sol.logicArr, topFiveSols[j].logicArr)) {
+        break;
+      } else if (sol.fitness < topFiveSols[j].fitness) {
         topFiveSols.splice(j, 0, sol)
         topFiveSols.pop()
         break;
       }
     }
-
   } // end of numTries loop
+
+  storedSols = [topFiveSols, [worstSol]]
 
   // our solution has been chosen:
 
-  updateDispArr(topFiveSols[chosenSolution]) //Updates dispArr and starts drawing
+  updateDispArr(storedSols[solType][chosenSolution]) //Updates dispArr and starts drawing
 }
 
 function findHomeForWord(word) { //Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
 
-  for (let i = sol.minX; i <= sol.maxX; i++) { //Checking if any position has valid placement
-    for (let j = sol.minY; j <= sol.maxY; j++) {
+  switch (arraySearchMethod) {
+    case 0: // Starts in the top left corner to find valid points
+      for (let i = sol.minX; i <= sol.maxX; i++) { //Checking if any position has valid placement
+        for (let j = sol.minY; j <= sol.maxY; j++) {
 
-      if (isValidPosition(word, i, j)) {
-        return true;
+          if (isValidPosition(word, i, j)) {
+            return true;
+          }
+
+        }
+      }
+      break;
+    case 1: // Starts in the top right corner to find valid points
+      for (let i = sol.maxX; i >= sol.minX; i--) { //Checking if any position has valid placement
+        for (let j = sol.minY; j <= sol.maxY; j++) {
+
+          if (isValidPosition(word, i, j)) {
+            return true;
+          }
+
+        }
+      }
+      break;
+    case 2: // Starts in the bottom left corner to find valid points
+      for (let i = sol.minX; i <= sol.maxX; i++) { //Checking if any position has valid placement
+        for (let j = sol.maxY; j >= sol.minY; j--) {
+
+          if (isValidPosition(word, i, j)) {
+            return true;
+          }
+
+        }
       }
 
-    }
+      break;
+    case 3: // Starts in the bottom right corner to find valid points
+      for (let i = sol.maxX; i >= sol.minX; i--) { //Checking if any position has valid placement
+        for (let j = sol.maxY; j >= sol.minY; j--) {
+
+          if (isValidPosition(word, i, j)) {
+            return true;
+          }
+
+        }
+      }
+      break;
+    case 4: // Spirals out from the center to find valid points
+
+      let size = max(sol.maxX - sol.minX, sol.maxY - sol.minY)
+      if (size % 2 == 0) {
+        size++
+      }
+      let xIndex = sol.minX + floor((size - 1) / 2)
+      let yIndex = sol.minY + floor((size - 1) / 2)
+
+      let i = 1;
+
+      isValidPosition(word, xIndex, yIndex)//Checking the center
+      let dir = 1
+      while(i < size) {
+        for (let j = 0; j < i; j++) {
+          xIndex += dir
+          if (isValidPosition(word, xIndex, yIndex)) {//Checks and moves right/left
+            return true
+          }
+        }
+        for (let j = 0; j < i; j++) {
+          yIndex -= dir
+          if (isValidPosition(word, xIndex, yIndex)) {//Checks and moves up/down
+            return true
+          }
+        }
+        i++
+        dir = dir * -1
+      }
+      for (let j = 0; j < size - 1; j++) {
+        xIndex++
+        if (isValidPosition(word, xIndex, yIndex)) {//Checks the final row
+          return true
+        }
+      }
+
+      break;
+    default:
+      alert("Invalid arraySearchMethod: " + arraySearchMethod)
   }
   return false
 }
 
-//TEST THIS HEAVILY
 function isValidPosition(word, x, y) { //Returns whether a word can be placed at a coordinate in logicArr
 
   if (sol.logicArr[x][y] == 0) {
@@ -208,7 +296,23 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
   }
 }
 
+function changeDisplayedSolution(type, choice) { // Receives arguments from button to decide which solution to display
+
+
+  solType = type
+  chosenSolution = choice
+  updateDispArr(storedSols[solType][chosenSolution])
+}
+
 function updateDispArr(sol) {
+
+  if (sol.orphans.length > 0) {
+    h3.innerHTML = "Words that couldnt be used: " + sol.orphans
+    h3.removeAttribute('hidden')
+  } else{
+    h3.setAttribute('hidden', true)
+  }
+
   dispArr = new Array(sol.maxX - sol.minX + 1).fill(0).map(() => new Array(sol.maxY - sol.minY + 1).fill(0)) // <-- set up dispArr to be what we draw off of
   for (let i = 0; i <= sol.maxX - sol.minX; i++) { // Populates dispArr with the appropriate values from logicArr
     for (let j = 0; j <= sol.maxY - sol.minY; j++) {
@@ -217,20 +321,15 @@ function updateDispArr(sol) {
   }
 
 setupCanvas()
-
 }
 
 function setupCanvas() {
 
-
-
-
-
-  let numCols = topFiveSols[chosenSolution].maxX - topFiveSols[chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
-  let numRows = topFiveSols[chosenSolution].maxY - topFiveSols[chosenSolution].minY + 1
+  let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
+  let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
 
   if (windowHeight < windowWidth) {
-    canvasY = windowHeight * 0.8 // Automatically adjusts the canvas to be 80% of the window's height
+    canvasY = windowHeight * 0.75 // Automatically adjusts the canvas to be 75% of the window's height
     canvasX = canvasY / numRows * numCols
   } else {
     canvasX = windowWidth // Automatically adjusts the canvas to the window's width
@@ -242,6 +341,23 @@ function setupCanvas() {
   textFont('Courier')
   pixelDensity(1)
 
+  if (myButton1.getAttribute('hidden') != null) {
+    h5.removeAttribute('hidden')
+    myButton1.removeAttribute('hidden')
+    myButton2.removeAttribute('hidden')
+    myButton3.removeAttribute('hidden')
+    myButton4.removeAttribute('hidden')
+    myButton5.removeAttribute('hidden')
+    myButtonWorst.removeAttribute('hidden')
+  }
+
+  myButton1.innerHTML = "1 - Type: " + storedSols[0][0].searchMethod
+  myButton2.innerHTML = "2 - Type: " + storedSols[0][1].searchMethod
+  myButton3.innerHTML = "3 - Type: " + storedSols[0][2].searchMethod
+  myButton4.innerHTML = "4 - Type: " + storedSols[0][3].searchMethod
+  myButton5.innerHTML = "5 - Type: " + storedSols[0][4].searchMethod
+  myButtonWorst.innerHTML = "Worst - Type: " + storedSols[1][0].searchMethod
+
   notReady = false;
 }
 
@@ -251,8 +367,8 @@ function draw() {
   }
   background(0)
 
-  let numCols = topFiveSols[chosenSolution].maxX - topFiveSols[chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
-  let numRows = topFiveSols[chosenSolution].maxY - topFiveSols[chosenSolution].minY + 1
+  let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
+  let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
   squareWidth = canvasX / numCols; // Calculates the size of each grid for drawing
   squareHeight = canvasY / numRows;
 
@@ -300,19 +416,30 @@ function print2dArr(arr) {
 }
 
 function shuffleArr(arr) {
-  var i = arr.length;
+  let i = arr.length;
   if ( i == 0 ) return false;
   while ( --i ) {
-     var j = Math.floor( Math.random() * ( i + 1 ) );
-     var tempi = arr[i];
-     var tempj = arr[j];
-     arr[i] = tempj;
-     arr[j] = tempi;
+     let j = Math.floor( Math.random() * ( i + 1 ) );
+     [arr[i], arr[j]] = [arr[j], arr[i]]
+     // var tempi = arr[i];
+     // var tempj = arr[j];
+     // arr[i] = tempj;
+     // arr[j] = tempi;
    }
 }
 
+function arraysEqual(a, b) {
+
+  for (let i = 0; i < a.length; i++) {
+    for (let j = 0; j < a[0].length; j++) {
+      if (a[i][j] !== b[i][j]) return false;
+    }
+  }
+  return true;
+}
+
 class solutionState {
-  constructor(minX, maxX, minY, maxY, fitness, logicArr, orphans) {
+  constructor(minX, maxX, minY, maxY, fitness, logicArr, orphans, searchMethod) {
     this.minX = minX
     this.maxX = maxX
     this.minY = minY
@@ -320,5 +447,6 @@ class solutionState {
     this.fitness = fitness
     this.logicArr = logicArr
     this.orphans = orphans
+    this.searchMethod
   }
 }

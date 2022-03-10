@@ -5,11 +5,21 @@
 <html>
 <title>Crossword Maker</title>
 <head>
-  <h1 style="text-align:center">Crossword Maker<span style="float:right"><a style="font-size:16px" href="https://mtgmarshall.github.io">Home</a></span></h1>
-  <h2 style="text-align:center">
-  <input type="text" placeholder="Words to use seperated by &ldquo;, &ldquo;" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" id="myInput" size="60" value="values, to, test">
+  <h1 style="text-align:center">Crossword Maker<span style="float:right"><a style="font-size:16px" href="https://mtgmarshall.github.io">Home</a></span><br />
+  <input type="text" placeholder="Words to use seperated by &ldquo; &ldquo;" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" id="myInput" size="60">
   <button type="button" id="myButton" onclick="main();">Create</button>
-  </h2>
-  <h3 id="canvas" style="text-align:center"></h3>
+  </h1>
+  <h3 style="text-align:center;font-size:16px" id = "h3" hidden></h3>
+  <h4 id="canvas" style="text-align:center"></h4>
+  <h5 style="text-align:center" id="h5" hidden>
+    <font size="4">Solutions:</font><br />
+<!--    <font size="2">Type 0: Top-left Type 1: Top-right Type 2: Bottom-left Type 3: Bottom-Right Type 4: Center Spiral</font><br /> -->
+    <button type="button" id="myButton1" onclick="changeDisplayedSolution(0, 0);" hidden>1</button>
+    <button type="button" id="myButton2" onclick="changeDisplayedSolution(0, 1);" hidden>2</button>
+    <button type="button" id="myButton3" onclick="changeDisplayedSolution(0, 2);" hidden>3</button>
+    <button type="button" id="myButton4" onclick="changeDisplayedSolution(0, 3);" hidden>4</button>
+    <button type="button" id="myButton5" onclick="changeDisplayedSolution(0, 4);" hidden>5</button>
+    <button type="button" id="myButtonWorst" onclick="changeDisplayedSolution(1, 0);" hidden>Worst</button>
+  </h5>
 </head>
 </html>
