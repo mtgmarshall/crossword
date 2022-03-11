@@ -10,9 +10,13 @@ let notReady = true
 let wordsLength
 let canvasX
 let canvasY
+let graphicX
+let graphicY
+let resMult = 1
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 let numTries = 1000
 let sol
+let graphic
 
 function main() {
 
@@ -154,16 +158,18 @@ function findHomeForWord(word) { //Determines if a given word can be placed in t
       break;
     case 4: // Spirals out from the center to find valid points
 
-      let size = max(sol.maxX - sol.minX, sol.maxY - sol.minY)
+      let size = max(sol.maxX - sol.minX + 1, sol.maxY - sol.minY + 1)
       if (size % 2 == 0) {
         size++
       }
       let xIndex = sol.minX + floor((size - 1) / 2)
       let yIndex = sol.minY + floor((size - 1) / 2)
 
-      let i = 1;
+      if (isValidPosition(word, xIndex, yIndex)) {//Checking the center
+        return true
+      }
 
-      isValidPosition(word, xIndex, yIndex)//Checking the center
+      let i = 1
       let dir = 1
       while(i < size) {
         for (let j = 0; j < i; j++) {
@@ -344,10 +350,13 @@ function setupCanvas() {
     canvasX = windowWidth // Automatically adjusts the canvas to the window's width
     canvasY = canvasX / numCols * numRows
   }
+  graphicX = canvasX * resMult
+  graphicY = canvasY * resMult
 
   let canvas = createCanvas(canvasX + 1, canvasY + 1)
+  graphic = createGraphics(graphicX + resMult, graphicY + resMult)
   canvas.parent('canvas')
-  textFont('Courier')
+  graphic.textFont('Courier')
 
   if (myButton1.getAttribute('hidden') != null) {
     h5.removeAttribute('hidden')
@@ -373,38 +382,41 @@ function draw() {
   if (notReady) {
     return
   }
-  background(0)
+  graphic.background(0)
+  graphic.strokeWeight(resMult)
 
   let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
   let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
-  squareWidth = canvasX / numCols / pixelDensity(); // Calculates the size of each grid for drawing
-  squareHeight = canvasY / numRows / pixelDensity();
+  squareWidth = graphicX / numCols / pixelDensity(); // Calculates the size of each grid for drawing
+  squareHeight = graphicY / numRows / pixelDensity();
 
   textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
 
-  fill(255)
+  graphic.fill(255)
   for (let i = 0; i < numCols; i++){ //Creates the grid
     for (let j = 0; j < numRows; j++){
-      rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+      graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
     }
   }
 
-  fill(0)
+  graphic.fill(0)
   for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
     for (j = 0; j < numRows; j++) {
-      textSize(textValue) // Sets the textSize to our calculated best text size
+      graphic.textSize(textValue) // Sets the textSize to our calculated best text size
       if (dispArr[i][j][0] != 0) {
-        text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+        graphic.text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
       } else {
-        rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+        graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
       }
 
-      textSize(textValue / 4) // Sets the textSize to our calculated best text size
+      graphic.textSize(textValue / 4) // Sets the textSize to our calculated best text size
       if (dispArr[i][j][1] != 0) {
-        text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
+        graphic.text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
       }
     }
   }
+
+  image(graphic, 0, 0, canvasX + 1, canvasY + 1)
 
 }
 
