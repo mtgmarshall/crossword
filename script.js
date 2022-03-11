@@ -10,17 +10,13 @@ let notReady = true
 let wordsLength
 let canvasX
 let canvasY
-let graphicX
-let graphicY
-let resMult = 1
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 let numTries = 1000
 let sol
-let graphic
 
 function main() {
 
-  words = myInput.value.split(" ")
+  words = myInput.value.toLowerCase().split(" ")
 
   wordsLength = 0 //Determining max grid size as all words together
   for (let i = 0; i < words.length; i++) {
@@ -91,9 +87,15 @@ function main() {
     }
 
     for (let j = 0; j < topFiveSols.length; j++) { // Checks if this solution is better than any of the top 5 solutions
-      if (arraysEqual(sol.logicArr, topFiveSols[j].logicArr)) {
+      if (arraysEqual(sol.logicArr, topFiveSols[j].logicArr, sol.minX, sol.maxX, sol.minY, sol.maxY)) {
         break;
       } else if (sol.fitness < topFiveSols[j].fitness) {
+        // print2dArr(sol.logicArr)
+        // console.log("\n" + sol.minX + " " + sol.maxX + " " + sol.minY + " " + sol.maxY)
+        // for (let z = 0; z <= j; z++) {
+        //   print2dArr(topFiveSols[z].logicArr)
+        // }
+        // console.log("\n\n\n\n")
         topFiveSols.splice(j, 0, sol)
         topFiveSols.pop()
         break;
@@ -344,19 +346,21 @@ function setupCanvas() {
   let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
 
   if (windowHeight < windowWidth) {
-    canvasY = windowHeight * 0.75 // Automatically adjusts the canvas to be 75% of the window's height
-    canvasX = canvasY / numRows * numCols
+    if (storedSols[solType][chosenSolution].orphans.length == 0) {
+      canvasY = windowHeight * 0.75 // Automatically adjusts the canvas to be 75% of the window's height
+      canvasX = canvasY / numRows * numCols
+    } else {
+      canvasY = windowHeight * 0.7
+      canvasX = canvasY / numRows * numCols
+    }
   } else {
     canvasX = windowWidth // Automatically adjusts the canvas to the window's width
     canvasY = canvasX / numCols * numRows
   }
-  graphicX = canvasX * resMult
-  graphicY = canvasY * resMult
 
   let canvas = createCanvas(canvasX + 1, canvasY + 1)
-  graphic = createGraphics(graphicX + resMult, graphicY + resMult)
   canvas.parent('canvas')
-  graphic.textFont('Courier')
+  textFont('Courier')
 
   if (myButton1.getAttribute('hidden') != null) {
     h5.removeAttribute('hidden')
@@ -382,42 +386,38 @@ function draw() {
   if (notReady) {
     return
   }
-  graphic.background(0)
-  graphic.strokeWeight(resMult)
+  background(0)
 
   let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
   let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
-  squareWidth = graphicX / numCols / pixelDensity(); // Calculates the size of each grid for drawing
-  squareHeight = graphicY / numRows / pixelDensity();
+  squareWidth = canvasX / numCols / pixelDensity(); // Calculates the size of each grid for drawing
+  squareHeight = canvasY / numRows / pixelDensity();
 
   textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
 
-  graphic.fill(255)
+  fill(255)
   for (let i = 0; i < numCols; i++){ //Creates the grid
     for (let j = 0; j < numRows; j++){
-      graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+      rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
     }
   }
 
-  graphic.fill(0)
+  fill(0)
   for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
     for (j = 0; j < numRows; j++) {
-      graphic.textSize(textValue) // Sets the textSize to our calculated best text size
+      textSize(textValue) // Sets the textSize to our calculated best text size
       if (dispArr[i][j][0] != 0) {
-        graphic.text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+        text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
       } else {
-        graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+        rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
       }
 
-      graphic.textSize(textValue / 4) // Sets the textSize to our calculated best text size
+      textSize(textValue / 4) // Sets the textSize to our calculated best text size
       if (dispArr[i][j][1] != 0) {
-        graphic.text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
+        text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
       }
     }
   }
-
-  image(graphic, 0, 0, canvasX + 1, canvasY + 1)
-
 }
 
 // Prints the 2d array as an alert message, primarily for debugging
@@ -426,7 +426,7 @@ function print2dArr(arr) {
   let i, j
   for (i = 0; i < arr[0].length; i++) {
     for (j = 0; j < arr.length; j++) {
-      if (i < arr[0].length - 1) {
+      if (j < arr.length - 1) {
         msg += arr[j][i] + " "
       } else {
         msg += arr[j][i]
@@ -436,7 +436,7 @@ function print2dArr(arr) {
       msg += "\n"
     }
   }
-  alert(msg)
+  console.log(msg)
 }
 
 function shuffleArr(arr) {
@@ -452,10 +452,17 @@ function shuffleArr(arr) {
    }
 }
 
-function arraysEqual(a, b) {
+function arraysEqual(a, b, xStart = 0, xEnd = -1, yStart = 0, yEnd = -1) {
 
-  for (let i = 0; i < a.length; i++) {
-    for (let j = 0; j < a[0].length; j++) {
+  if (xEnd == -1) {
+    xEnd = a.length - 1
+  }
+  if (yEnd == -1) {
+    yEnd = a[0].length - 1
+  }
+
+  for (let i = xStart; i <= xEnd; i++) {
+    for (let j = yStart; j <= yEnd; j++) {
       if (a[i][j] !== b[i][j]) return false;
     }
   }
