@@ -90,21 +90,12 @@ function main() {
       if (arraysEqual(sol.logicArr, topFiveSols[j].logicArr, sol.minX, sol.maxX, sol.minY, sol.maxY)) {
         break;
       } else if (sol.fitness < topFiveSols[j].fitness) {
-<<<<<<< HEAD
         // print2dArr(sol.logicArr)
         // console.log("\n" + sol.minX + " " + sol.maxX + " " + sol.minY + " " + sol.maxY)
         // for (let z = 0; z <= j; z++) {
         //   print2dArr(topFiveSols[z].logicArr)
         // }
         // console.log("\n\n\n\n")
-=======
-        print2dArr(sol.logicArr)
-        console.log("\n" + sol.minX + " " + sol.maxX + " " + sol.minY + " " + sol.maxY)
-        for (let z = 0; z <= j; z++) {
-          print2dArr(topFiveSols[z].logicArr)
-        }
-        console.log("\n\n\n\n")
->>>>>>> 16bdb1b01207653dcba8dc47805226f760f02221
         topFiveSols.splice(j, 0, sol)
         topFiveSols.pop()
         break;
