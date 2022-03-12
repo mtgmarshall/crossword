@@ -1,5 +1,7 @@
 
 let words                   // The user's input array of words for the crossword
+let hints                   // The user's input array of hints for the crossword
+let wordIndices             // The indices to reference the words array
 let gridCenter              // The center of logicArr (also just the total word length)
 let storedSols              // stores topFiveSols and worstSol
 let topFiveSols = []        // stores the top five solutions based on fitness
@@ -23,7 +25,36 @@ function main() {
   noLoop()
   hideWords = false
 
-  words = myInput.value.toLowerCase().split(" ")
+  words = []
+  hints = []
+  wordIndices = []
+  let numValidRows = 0;
+  for (let i = 1; i < numTableRows; i++) { //
+    let wrd
+    let hnt
+    try {
+      wrd = document.getElementById('wordRow'+i).value.toLowerCase()
+      hnt = document.getElementById('hintRow'+i).value
+    } catch (e) {
+      wrd = undefined
+      hnt = undefined
+    }
+    if (wrd == undefined || hnt == undefined) {
+      continue
+    } else if (wrd == "" || hnt == "") {
+      alert("A field (Row: " + (numValidRows + 1) + ") is empty!")
+      return
+    }
+    words.push(wrd)
+    hints.push(hnt)
+    wordIndices.push(numValidRows)
+    numValidRows++
+  }
+
+  if (words.length == 0) { // Prevents empty entries from proceeding
+    alert("No words have been input!")
+    return
+  }
 
   wordsLength = 0 //Determining max grid size as all words together
   for (let i = 0; i < words.length; i++) {
@@ -33,16 +64,16 @@ function main() {
 
   topFiveSols = [] // sets up topFiveSols and worstSol to the track the 5 best, and 1 worst solutions
   worstSol = new solutionState(0, 0, 0, 0, -1, 0, [], -1)
-  worstSol.logicArr = new Array(wordsLength*2).fill(0).map(() => new Array(wordsLength*2).fill(0))
+  worstSol.logicArr = new Array(wordsLength*2).fill(new gridPoint()).map(() => new Array(wordsLength*2).fill(new gridPoint()))
   for (let i = 0; i < 5; i++) {
     topFiveSols.push(new solutionState(0, 0, 0, 0, 100000000, 0, [], -1))
-    topFiveSols[i].logicArr = new Array(wordsLength*2).fill(0).map(() => new Array(wordsLength*2).fill(0))
+    topFiveSols[i].logicArr = new Array(wordsLength*2).fill(new gridPoint()).map(() => new Array(wordsLength*2).fill(new gridPoint()))
   }
 
   // Start our loop through random assortments of words[] to try various solutions
   for (let k = 0; k < numTries; k++) {
 
-    shuffleArr(words)
+    shuffleArr(wordIndices)
 
     sol = new solutionState()
 
@@ -51,13 +82,13 @@ function main() {
     sol.minY = wordsLength * 2 - 1;
     sol.maxY = 0;
 
-    sol.logicArr = new Array(wordsLength*2).fill(0).map(() => new Array(wordsLength*2).fill(0)) //Declaring the array used for behind the scenes logic
+    sol.logicArr = new Array(wordsLength*2).fill(new gridPoint()).map(() => new Array(wordsLength*2).fill(new gridPoint())) //Declaring the array used for behind the scenes logic
 
     sol.orphans = []
 
     sol.searchMethod = floor(random() * 5)
 
-    addWord(words[0], gridCenter, gridCenter, "across")
+    addWord(words[wordIndices[0]], wordIndices[0], gridCenter, gridCenter, "across")
 
     // Make sure all bools are checked to be ready, any false notready = true...otherwise false
     let orphanCounter = 0 //Counts how many of the words in the array cannot be placed into logicArray
@@ -69,8 +100,8 @@ function main() {
       // [xxxxx, xxxxx, xxxxx, orphan2, orphan1] i = 3, oc = 0                0 >= 2 false
       // [xxxxx, xxxxx, xxxxx, orphan1, orphan2] i--, oc++, i = 3, oc = 1     1 >= 2 false
       // [xxxxx, xxxxx, xxxxx, orphan2, orphan1] i--, oc++, i = 3, oc = 2     2 >= 2 true, so break
-      if (!findHomeForWord(words[i])) {
-        words.push(words.splice(i,1)[0]) //Pushes word that couldnt be added to the end of the array
+      if (!findHomeForWord(words[wordIndices[i]]), wordIndices[i]) {
+        wordIndices.push(wordIndices.splice(i,1)[0]) //Pushes word that couldnt be added to the end of the array
         i--
         orphanCounter++
       } else {
@@ -80,7 +111,7 @@ function main() {
       if (orphanCounter >= words.length - 1 - i) {
 
         for (let j = i+1; j < words.length; j++) {
-           sol.orphans.push(words[j])
+           sol.orphans.push(words[wordIndices[j]])
         }
         numOrphans = orphanCounter
         break;
@@ -112,14 +143,14 @@ function main() {
 }
 
 //Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
-function findHomeForWord(word) {
+function findHomeForWord(word, wordIndex) {
 
   switch (sol.searchMethod) {
     case 0: // Starts in the top left corner to find valid points
       for (let i = sol.minX; i <= sol.maxX; i++) { //Checking if any position has valid placement
         for (let j = sol.minY; j <= sol.maxY; j++) {
 
-          if (isValidPosition(word, i, j)) {
+          if (isValidPosition(word, wordIndex, i, j)) {
             return true;
           }
 
@@ -130,7 +161,7 @@ function findHomeForWord(word) {
       for (let i = sol.maxX; i >= sol.minX; i--) { //Checking if any position has valid placement
         for (let j = sol.minY; j <= sol.maxY; j++) {
 
-          if (isValidPosition(word, i, j)) {
+          if (isValidPosition(word, wordIndex, i, j)) {
             return true;
           }
 
@@ -141,7 +172,7 @@ function findHomeForWord(word) {
       for (let i = sol.minX; i <= sol.maxX; i++) { //Checking if any position has valid placement
         for (let j = sol.maxY; j >= sol.minY; j--) {
 
-          if (isValidPosition(word, i, j)) {
+          if (isValidPosition(word, wordIndex, i, j)) {
             return true;
           }
 
@@ -153,7 +184,7 @@ function findHomeForWord(word) {
       for (let i = sol.maxX; i >= sol.minX; i--) { //Checking if any position has valid placement
         for (let j = sol.maxY; j >= sol.minY; j--) {
 
-          if (isValidPosition(word, i, j)) {
+          if (isValidPosition(word, wordIndex, i, j)) {
             return true;
           }
 
@@ -169,7 +200,7 @@ function findHomeForWord(word) {
       let xIndex = sol.minX + floor((size - 1) / 2)
       let yIndex = sol.minY + floor((size - 1) / 2)
 
-      if (isValidPosition(word, xIndex, yIndex)) {//Checking the center
+      if (isValidPosition(word, wordIndex, xIndex, yIndex)) {//Checking the center
         return true
       }
 
@@ -178,13 +209,13 @@ function findHomeForWord(word) {
       while(i < size) {
         for (let j = 0; j < i; j++) {
           xIndex += dir
-          if (isValidPosition(word, xIndex, yIndex)) {//Checks and moves right/left
+          if (isValidPosition(word, wordIndex, xIndex, yIndex)) {//Checks and moves right/left
             return true
           }
         }
         for (let j = 0; j < i; j++) {
           yIndex -= dir
-          if (isValidPosition(word, xIndex, yIndex)) {//Checks and moves up/down
+          if (isValidPosition(word, wordIndex, xIndex, yIndex)) {//Checks and moves up/down
             return true
           }
         }
@@ -193,24 +224,24 @@ function findHomeForWord(word) {
       }
       for (let j = 0; j < size - 1; j++) {
         xIndex++
-        if (isValidPosition(word, xIndex, yIndex)) {//Checks the final row
+        if (isValidPosition(word, wordIndex, xIndex, yIndex)) {//Checks the final row
           return true
         }
       }
 
       break;
     default:
-      alert("Invalid arraySearchMethod: " + arraySearchMethod)
+      alert("Invalid arraySearchMethod: " + sol.searchMethod)
   }
   return false
 }
 
 // Returns whether a word can be placed at a coordinate in logicArr
-function isValidPosition(word, x, y) {
+function isValidPosition(word, wordIndex, x, y) {
 
-  if (sol.logicArr[x][y] == 0) {
+  if (sol.logicArr[x][y].letter == 0) {
     return false
-  } if (!word.includes(sol.logicArr[x][y])) {
+  } if (!word.includes(sol.logicArr[x][y].letter)) {
     return false
   }
 
@@ -218,7 +249,7 @@ function isValidPosition(word, x, y) {
 
   let letterPositions = [] //Indexes in word that share the letter with logicArr[x,y]
   for (let i = 0; i < word.length; i++) {
-    if (word.charAt(i) == sol.logicArr[x][y]) {
+    if (word.charAt(i) == sol.logicArr[x][y].letter) {
       letterPositions.push(i)
     }
   }
@@ -228,37 +259,37 @@ nextMatch:  for (let i = 0; i < letterPositions.length; i++){
     upLeft = letterPositions[i]                       // how far the word can go up or left
     downRight = word.length - letterPositions[i] - 1  // how far the word can go down or right
 
-    if (sol.logicArr[x-1][y] == 0 && sol.logicArr[x+1][y] == 0) {
+    if (sol.logicArr[x-1][y].letter == 0 && sol.logicArr[x+1][y].letter == 0) {
       for (let j = 0; j < upLeft; j++) {//Checking if placing the word left is valid
-        if (!((sol.logicArr[x-2-j][y] == 0 || (j < upLeft-1 && sol.logicArr[x-2-j][y] == word.charAt(upLeft-2-j))) && (((sol.logicArr[x-1-j][y+1] == 0 && sol.logicArr[x-1-j][y-1] == 0) || sol.logicArr[x-1-j][y] == word.charAt(upLeft-1-j))))) {
+        if (!((sol.logicArr[x-2-j][y].letter == 0 || (j < upLeft-1 && sol.logicArr[x-2-j][y].letter == word.charAt(upLeft-2-j))) && (((sol.logicArr[x-1-j][y+1].letter == 0 && sol.logicArr[x-1-j][y-1].letter == 0) || sol.logicArr[x-1-j][y].letter == word.charAt(upLeft-1-j))))) {
           continue nextMatch
         }
       }
 
       for (let j = 0; j < downRight; j++) {//Checking if placing the word right is valid
         //if (!(logicArr[x+2+j][y] == 0 && logicArr[x+1+j][y+1] == 0 && logicArr[x+1+j][y-1] == 0)) {
-        if (!((sol.logicArr[x+2+j][y] == 0 || (j < downRight-1 && sol.logicArr[x+2+j][y] == word.charAt(letterPositions[i]+2+j))) && (((sol.logicArr[x+1+j][y+1] == 0 && sol.logicArr[x+1+j][y-1] == 0) || sol.logicArr[x+1+j][y] == word.charAt(letterPositions[i]+1+j))))) {
+        if (!((sol.logicArr[x+2+j][y].letter == 0 || (j < downRight-1 && sol.logicArr[x+2+j][y].letter == word.charAt(letterPositions[i]+2+j))) && (((sol.logicArr[x+1+j][y+1].letter == 0 && sol.logicArr[x+1+j][y-1].letter == 0) || sol.logicArr[x+1+j][y].letter == word.charAt(letterPositions[i]+1+j))))) {
           continue nextMatch
         }
       }
 
-      addWord(word, x - upLeft, y, "across")
+      addWord(word, wordIndex, x - upLeft, y, "across")
       return true
 
-    } else if (sol.logicArr[x][y-1] == 0 && sol.logicArr[x][y+1] == 0) {
+    } else if (sol.logicArr[x][y-1].letter == 0 && sol.logicArr[x][y+1].letter == 0) {
       for (let j = 0; j < upLeft; j++) {//Checking if placing the word up is valid
-        if (!((sol.logicArr[x][y-2-j] == 0 || (j < upLeft-1 && sol.logicArr[x][y-2-j] == word.charAt(upLeft-2-j))) && (((sol.logicArr[x+1][y-1-j] == 0 && sol.logicArr[x-1][y-1-j] == 0) || sol.logicArr[x][y-1-j] == word.charAt(upLeft-1-j))))) {
+        if (!((sol.logicArr[x][y-2-j].letter == 0 || (j < upLeft-1 && sol.logicArr[x][y-2-j].letter == word.charAt(upLeft-2-j))) && (((sol.logicArr[x+1][y-1-j].letter == 0 && sol.logicArr[x-1][y-1-j].letter == 0) || sol.logicArr[x][y-1-j].letter == word.charAt(upLeft-1-j))))) {
           continue nextMatch
         }
       }
 
       for (let j = 0; j < downRight; j++) {//Checking if placing the word down is valid
-        if (!((sol.logicArr[x][y+2+j] == 0 || (j < downRight-1 && sol.logicArr[x][y+2+j] == word.charAt(letterPositions[i]+2+j))) && (((sol.logicArr[x+1][y+1+j] == 0 && sol.logicArr[x-1][y+1+j] == 0) || sol.logicArr[x][y+1+j] == word.charAt(letterPositions[i]+1+j))))) {
+        if (!((sol.logicArr[x][y+2+j].letter == 0 || (j < downRight-1 && sol.logicArr[x][y+2+j].letter == word.charAt(letterPositions[i]+2+j))) && (((sol.logicArr[x+1][y+1+j].letter == 0 && sol.logicArr[x-1][y+1+j].letter == 0) || sol.logicArr[x][y+1+j].letter == word.charAt(letterPositions[i]+1+j))))) {
           continue nextMatch
         }
       }
 
-      addWord(word, x, y - upLeft, "down")
+      addWord(word, wordIndex, x, y - upLeft, "down")
       return true
 
     }
@@ -269,7 +300,7 @@ nextMatch:  for (let i = 0; i < letterPositions.length; i++){
 }
 
 // Adds word to the LogicArr at x,y going in dir, updates minX maxX minY maxY
-function addWord(word, x, y, dir) {
+function addWord(word, wordIndex, x, y, dir) {
 
   let dx, dy; //booleans to indicate across or down
   //alert(word + " is being added into the crossword at " + x + " and " + y)
@@ -286,7 +317,10 @@ function addWord(word, x, y, dir) {
 
   for (let i = 0; i < word.length; i++) { //Adds word to the LogicArr
     try {
-      sol.logicArr[x + i * dx][y + i * dy] = word.charAt(i)
+      sol.logicArr[x + i * dx][y + i * dy].letter = word.charAt(i)
+      if (i == 0) {
+        sol.logicArr[x + i * dx][y + i * dy].wordIndex.push(wordIndex)
+      }
     } catch (e) {
       alert(e)
     }
@@ -329,21 +363,24 @@ function updateDispArr() {
     h3.setAttribute('hidden', true)
   }
 
-  dispArr = new Array(storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1).fill(0).map(() => new Array(storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1).fill(0).map(() => new Array(2).fill(0))) // <-- set up dispArr to be what we draw off of
+  dispArr = new Array(storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1).fill(new gridPoint()).map(() => new Array(storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1).fill(new gridPoint())) // <-- set up dispArr to be what we draw off of
   for (let i = 0; i <= storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX; i++) { // Populates dispArr with the appropriate values from logicArr
     for (let j = 0; j <= storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY; j++) {
-      dispArr[i][j][0] = storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j]
+      dispArr[i][j].letter = storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].letter
+      for (k = 0; k < storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].wordIndex.length; k++) {
+        dispArr[i][j].wordIndex.push(storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].wordIndex[k])
+      }
     }
   }
 
   let clueNum = 1;
   for (let j = 0; j <= storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY; j++) { // Populates dispArr with the appropriate values from logicArr
     for (let i = 0; i <= storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX; i++) {
-      if (dispArr[i][j][0] != 0 && (i == 0 || dispArr[i - 1][j][0] == 0) && i < storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX && dispArr[i + 1][j][0] != 0) {
-        dispArr[i][j][1] = "" + clueNum
+      if (dispArr[i][j].letter != 0 && (i == 0 || dispArr[i - 1][j].letter == 0) && i < storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX && dispArr[i + 1][j].letter != 0) {
+        dispArr[i][j].hintNum = "" + clueNum
         clueNum++
-      } else if (dispArr[i][j][0] != 0 && (j == 0 || dispArr[i][j - 1][0] == 0) && j < storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY && dispArr[i][j + 1][0] != 0) {
-        dispArr[i][j][1] = "" + clueNum
+      } else if (dispArr[i][j].letter != 0 && (j == 0 || dispArr[i][j - 1].letter == 0) && j < storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY && dispArr[i][j + 1].letter != 0) {
+        dispArr[i][j].hintNum = "" + clueNum
         clueNum++
       }
     }
@@ -423,17 +460,17 @@ function draw() {
   for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
     for (j = 0; j < numRows; j++) {
       textSize(textValue) // Sets the textSize to our calculated best text size
-      if (dispArr[i][j][0] != 0) {
+      if (dispArr[i][j].letter != 0) {
         if (!hideWords) {
-          text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+          text(dispArr[i][j].letter, i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
         }
       } else {
         rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
       }
 
       textSize(textValue / 4) // Sets the textSize to our calculated best text size
-      if (dispArr[i][j][1] != 0) {
-        text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
+      if (dispArr[i][j].hintNum != 0) {
+        text(dispArr[i][j].hintNum, i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
       }
     }
   }
@@ -477,17 +514,17 @@ function createExportableImage() {
   for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
     for (j = 0; j < numRows; j++) {
       graphic.textSize(textValue) // Sets the textSize to our calculated best text size
-      if (dispArr[i][j][0] != 0) {
+      if (dispArr[i][j].letter != 0) {
         if (!hideWords) {
-          graphic.text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+          graphic.text(dispArr[i][j].letter, i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
         }
       } else {
         graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
       }
 
       graphic.textSize(textValue / 4) // Sets the textSize to our calculated best text size
-      if (dispArr[i][j][1] != 0) {
-        graphic.text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
+      if (dispArr[i][j].hintNum != 0) {
+        graphic.text(dispArr[i][j].hintNum, i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
       }
     }
   }
@@ -546,7 +583,7 @@ function arraysEqual(a, b, xStartA = 0, xEndA = -1, yStartA = 0, yEndA = -1, xSt
 
   for (let i = xStartA; i <= xEndA; i++) {
     for (let j = yStartA; j <= yEndA; j++) {
-      if (a[i][j] !== b[i + xOffset][j + yOffset]) return false
+      if (!a[i][j].equals(b[i + xOffset][j + yOffset])) return false
     }
   }
   return true
@@ -563,5 +600,24 @@ class solutionState {
     this.logicArr = logicArr
     this.orphans = orphans
     this.searchMethod
+  }
+}
+
+class gridPoint {
+  constructor(letter = "0", wordIndex = [], hintNum = 0) {
+    this.letter = letter
+    this.wordIndex = wordIndex
+    this.hintNum = hintNum
+    this.equals = function(otherGridPoint) {
+      return (this.letter == otherGridPoint.letter && this.wordIndex == otherGridPoint.wordIndex && this.hintNum == otherGridPoint.hintNum)
+    }
+  }
+}
+
+class hint {
+  constructor(sentence = "", num = 0, dir = "") {
+    this.sentence = sentence
+    this.num = num
+    this.dir = dir
   }
 }

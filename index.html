@@ -3,8 +3,10 @@
 <script type="text/javascript" src="script.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
+  let numTableRows
   $(document).ready(function(){
-    let numTableRows = 1      // Tracks how many rows have been created to create unique ids
+    $('.word, .hint').val('')
+    numTableRows = 1      // Tracks how many rows have been created to create unique ids
     let myFocus = $(':focus') // Tracks what our current focus is
     let shiftPressed = false  // Tracks if shift is pressed
     // Handles any events on the table
@@ -64,8 +66,8 @@
 <html>
 <title>Crossword Maker</title>
 <head>
-  <h1 style="text-align:center">Crossword Maker<span style="float:right"><a style="font-size:16px" href="https://mtgmarshall.github.io">Home</a></span><br />
-  <input type="text" placeholder="Words to use seperated by a space" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" id="myInput" size="60">
+  <h1 style="text-align:center">Crossword Maker<span style="float:right"><a style="font-size:16px" href="https://mtgmarshall.github.io">Home</a></span>
+<!--  <input type="text" placeholder="Words to use seperated by a space" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" id="myInput" size="60"> -->
   <table style="margin-left:auto;margin-right:auto">
     <tr>
         <td> <input class="word" id="wordRow1" placeholder="Word" size="10"> </td>
