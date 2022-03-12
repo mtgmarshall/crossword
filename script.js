@@ -7,17 +7,18 @@ let worstSol                // stores the solution with the worst fitness
 let solType = 0             // topFive (=0) or worst (=1)
 let chosenSolution = 0      // determines which solution to look at
 let dispArr                 // The array used to display
-let notReady = true
-let wordsLength
-let canvasX
-let canvasY
-let graphic
-let resMult = 4
+let notReady = true         // Prevents a draw until a crossword has been generated
+let wordsLength             // Count of how many words the user inputs
+let canvasX                 // The width of the drawing canvas
+let canvasY                 // The height of the drawing canvas
+let graphic                 // The high-resolution graphic used for exporting the crossword
+let resMult = 4             // The increase in resolution from the canvas to the export
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
-let numTries = 1000
-let sol
-let hideWords = false
+let numTries = 1000         // The amount of crossword generation attempts
+let sol                     // The current solution attempt
+let hideWords = false       // Used to decide if the words should be printed in draw
 
+// The primary flow of logic, runs when "Create" is clicked
 function main() {
   noLoop()
   hideWords = false
@@ -110,7 +111,8 @@ function main() {
   updateDispArr(storedSols[solType][chosenSolution]) //Updates dispArr and starts drawing
 }
 
-function findHomeForWord(word) { //Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
+//Determines if a given word can be placed in the logicArr and returns whether it placed the word in logicArr (will if it can)
+function findHomeForWord(word) {
 
   switch (sol.searchMethod) {
     case 0: // Starts in the top left corner to find valid points
@@ -203,7 +205,8 @@ function findHomeForWord(word) { //Determines if a given word can be placed in t
   return false
 }
 
-function isValidPosition(word, x, y) { //Returns whether a word can be placed at a coordinate in logicArr
+// Returns whether a word can be placed at a coordinate in logicArr
+function isValidPosition(word, x, y) {
 
   if (sol.logicArr[x][y] == 0) {
     return false
@@ -265,7 +268,8 @@ nextMatch:  for (let i = 0; i < letterPositions.length; i++){
   return false
 }
 
-function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in dir, updates minX maxX minY maxY, increments logicIndex
+// Adds word to the LogicArr at x,y going in dir, updates minX maxX minY maxY
+function addWord(word, x, y, dir) {
 
   let dx, dy; //booleans to indicate across or down
   //alert(word + " is being added into the crossword at " + x + " and " + y)
@@ -302,17 +306,20 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
   }
 }
 
+// Alternates whether or not the words will print within the crossword
 function showHideWords() {
   hideWords = !hideWords
   redraw()
 }
 
-function changeDisplayedSolution(type, choice) { // Receives arguments from button to decide which solution to display
+ // Receives arguments from button to decide which solution to display
+function changeDisplayedSolution(type, choice) {
   solType = type
   chosenSolution = choice
   updateDispArr()
 }
 
+// Prepares the dispArr with the chosen solution
 function updateDispArr() {
 
   if (storedSols[solType][chosenSolution].orphans.length > 0) {
@@ -345,6 +352,7 @@ function updateDispArr() {
 setupCanvas()
 }
 
+// Prepares the canvas for the draw() function to display on
 function setupCanvas() {
 
   let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
@@ -390,6 +398,7 @@ function setupCanvas() {
   redraw()
 }
 
+// Draws the crosswords onto the canvas, so it is seen on the web page
 function draw() {
   if (notReady) {
     return
@@ -431,12 +440,14 @@ function draw() {
   createExportableImage()
 }
 
+// Converts graphic to an image, then downloads it
 function saveImage() {
   let img = createImage(graphic.width, graphic.height)
   img.copy(graphic, 0, 0, graphic.width, graphic.height, 0, 0, graphic.width, graphic.height)
   img.save('Crossword', 'png')
 }
 
+// A near identical copy of draw() but draws on the graphic variable, instead of canvas
 function createExportableImage() {
   if (notReady) {
     return
@@ -501,6 +512,7 @@ function print2dArr(arr) {
   console.log(msg)
 }
 
+// Shuffles the arr array randomly
 function shuffleArr(arr) {
   let i = arr.length;
   if ( i == 0 ) return false;
@@ -510,6 +522,7 @@ function shuffleArr(arr) {
    }
 }
 
+// Checks if two arrays are equal, and can check sub-arrays if necessary
 function arraysEqual(a, b, xStartA = 0, xEndA = -1, yStartA = 0, yEndA = -1, xStartB = 0, xEndB = -1, yStartB = 0, yEndB = -1) {
 
   if (xEndA == -1) {
@@ -539,6 +552,7 @@ function arraysEqual(a, b, xStartA = 0, xEndA = -1, yStartA = 0, yEndA = -1, xSt
   return true
 }
 
+// The object used to store information for solutions
 class solutionState {
   constructor(minX, maxX, minY, maxY, fitness, logicArr, orphans, searchMethod) {
     this.minX = minX
