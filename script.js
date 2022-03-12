@@ -1,3 +1,4 @@
+
 let words                   // The user's input array of words for the crossword
 let gridCenter              // The center of logicArr (also just the total word length)
 let storedSols              // stores topFiveSols and worstSol
@@ -10,13 +11,15 @@ let notReady = true
 let wordsLength
 let canvasX
 let canvasY
+let graphic
+let resMult = 4
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 let numTries = 1000
 let sol
 let hideWords = false
 
 function main() {
-
+  noLoop()
   hideWords = false
 
   words = myInput.value.toLowerCase().split(" ")
@@ -301,6 +304,7 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
 
 function showHideWords() {
   hideWords = !hideWords
+  redraw()
 }
 
 function changeDisplayedSolution(type, choice) { // Receives arguments from button to decide which solution to display
@@ -365,6 +369,7 @@ function setupCanvas() {
 
   if (myButton1.getAttribute('hidden') != null) {
     myButtonWords.removeAttribute('hidden')
+    myButtonSave.removeAttribute('hidden')
     h5.removeAttribute('hidden')
     myButton1.removeAttribute('hidden')
     myButton2.removeAttribute('hidden')
@@ -382,6 +387,7 @@ function setupCanvas() {
   myButtonWorst.innerHTML = "Worst - Type: " + storedSols[1][0].searchMethod
 
   notReady = false;
+  redraw()
 }
 
 function draw() {
@@ -422,6 +428,58 @@ function draw() {
       }
     }
   }
+  createExportableImage()
+}
+
+function saveImage() {
+  let img = createImage(graphic.width, graphic.height)
+  img.copy(graphic, 0, 0, graphic.width, graphic.height, 0, 0, graphic.width, graphic.height)
+  img.save('Crossword', 'png')
+}
+
+function createExportableImage() {
+  if (notReady) {
+    return
+  }
+
+  let graphicX = canvasX * resMult
+  let graphicY = canvasY * resMult
+  graphic = createGraphics(graphicX + resMult, graphicY + resMult)
+  graphic.textFont('Courier')
+  graphic.background(0)
+
+  let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
+  let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
+  squareWidth = graphicX / numCols; // Calculates the size of each grid for drawing
+  squareHeight = graphicY / numRows;
+
+  textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
+
+  graphic.fill(255)
+  for (let i = 0; i < numCols; i++){ //Creates the grid
+    for (let j = 0; j < numRows; j++){
+      graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+    }
+  }
+
+  graphic.fill(0)
+  for (i = 0; i < numCols; i++) { //Inputs the values in dispArr into the grid
+    for (j = 0; j < numRows; j++) {
+      graphic.textSize(textValue) // Sets the textSize to our calculated best text size
+      if (dispArr[i][j][0] != 0) {
+        if (!hideWords) {
+          graphic.text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+        }
+      } else {
+        graphic.rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
+      }
+
+      graphic.textSize(textValue / 4) // Sets the textSize to our calculated best text size
+      if (dispArr[i][j][1] != 0) {
+        graphic.text(dispArr[i][j][1], i*squareWidth + squareWidth/3 - textValue/4, j*squareHeight + textValue/4)
+      }
+    }
+  }
 }
 
 // Prints the 2d array as an alert message, primarily for debugging
@@ -449,10 +507,6 @@ function shuffleArr(arr) {
   while ( --i ) {
      let j = Math.floor( Math.random() * ( i + 1 ) );
      [arr[i], arr[j]] = [arr[j], arr[i]]
-     // var tempi = arr[i];
-     // var tempj = arr[j];
-     // arr[i] = tempj;
-     // arr[j] = tempi;
    }
 }
 
