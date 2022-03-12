@@ -13,8 +13,11 @@ let canvasY
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 let numTries = 1000
 let sol
+let hideWords = false
 
 function main() {
+
+  hideWords = false
 
   words = myInput.value.toLowerCase().split(" ")
 
@@ -87,15 +90,9 @@ function main() {
     }
 
     for (let j = 0; j < topFiveSols.length; j++) { // Checks if this solution is better than any of the top 5 solutions
-      if (arraysEqual(sol.logicArr, topFiveSols[j].logicArr, sol.minX, sol.maxX, sol.minY, sol.maxY)) {
+      if (arraysEqual(sol.logicArr, topFiveSols[j].logicArr, sol.minX, sol.maxX, sol.minY, sol.maxY, topFiveSols[j].minX, topFiveSols[j].maxX, topFiveSols[j].minY, topFiveSols[j].maxY)) {
         break;
       } else if (sol.fitness < topFiveSols[j].fitness) {
-        // print2dArr(sol.logicArr)
-        // console.log("\n" + sol.minX + " " + sol.maxX + " " + sol.minY + " " + sol.maxY)
-        // for (let z = 0; z <= j; z++) {
-        //   print2dArr(topFiveSols[z].logicArr)
-        // }
-        // console.log("\n\n\n\n")
         topFiveSols.splice(j, 0, sol)
         topFiveSols.pop()
         break;
@@ -302,6 +299,10 @@ function addWord(word, x, y, dir) { //Adds word to the LogicArr at x,y going in 
   }
 }
 
+function showHideWords() {
+  hideWords = !hideWords
+}
+
 function changeDisplayedSolution(type, choice) { // Receives arguments from button to decide which solution to display
   solType = type
   chosenSolution = choice
@@ -363,6 +364,7 @@ function setupCanvas() {
   textFont('Courier')
 
   if (myButton1.getAttribute('hidden') != null) {
+    myButtonWords.removeAttribute('hidden')
     h5.removeAttribute('hidden')
     myButton1.removeAttribute('hidden')
     myButton2.removeAttribute('hidden')
@@ -407,7 +409,9 @@ function draw() {
     for (j = 0; j < numRows; j++) {
       textSize(textValue) // Sets the textSize to our calculated best text size
       if (dispArr[i][j][0] != 0) {
-        text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+        if (!hideWords) {
+          text(dispArr[i][j][0], i*squareWidth + squareWidth/2 - textValue/4, j*squareHeight + squareHeight/2 + textValue/4)
+        }
       } else {
         rect(squareWidth*i, squareHeight*j, squareWidth, squareHeight)
       }
@@ -452,21 +456,33 @@ function shuffleArr(arr) {
    }
 }
 
-function arraysEqual(a, b, xStart = 0, xEnd = -1, yStart = 0, yEnd = -1) {
+function arraysEqual(a, b, xStartA = 0, xEndA = -1, yStartA = 0, yEndA = -1, xStartB = 0, xEndB = -1, yStartB = 0, yEndB = -1) {
 
-  if (xEnd == -1) {
-    xEnd = a.length - 1
+  if (xEndA == -1) {
+    xEndA = a.length - 1
   }
-  if (yEnd == -1) {
-    yEnd = a[0].length - 1
+  if (yEndA == -1) {
+    yEndA = a[0].length - 1
+  }
+  if (xEndB == -1) {
+    xEndB = b.length - 1
+  }
+  if (yEndB == -1) {
+    yEndB = b[0].length - 1
+  }
+  if (xEndA - xStartA != xEndB - xStartB || yEndA - yStartA != yEndB - yStartB) {
+    return false
   }
 
-  for (let i = xStart; i <= xEnd; i++) {
-    for (let j = yStart; j <= yEnd; j++) {
-      if (a[i][j] !== b[i][j]) return false;
+  let xOffset = xEndB - xEndA
+  let yOffset = yEndB - yEndA
+
+  for (let i = xStartA; i <= xEndA; i++) {
+    for (let j = yStartA; j <= yEndA; j++) {
+      if (a[i][j] !== b[i + xOffset][j + yOffset]) return false
     }
   }
-  return true;
+  return true
 }
 
 class solutionState {
