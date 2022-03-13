@@ -31,10 +31,10 @@ function main() {
   let numValidRows = 0;
   for (let i = 1; i < numTableRows; i++) { //
     let wrd
-    let hnt
+    let hnt = new hint()
     try {
       wrd = document.getElementById('wordRow'+i).value.toLowerCase()
-      hnt = document.getElementById('hintRow'+i).value
+      hnt.sentence = document.getElementById('hintRow'+i).value
     } catch (e) {
       wrd = undefined
       hnt = undefined
@@ -334,6 +334,7 @@ function addWord(word, wordIndex, x, y, dir) {
       sol.logicArr[x + i * dx][y + i * dy].letter = word.charAt(i)
       if (i == 0) {
         sol.logicArr[x + i * dx][y + i * dy].wordIndex.push(wordIndex)
+        sol.logicArr[x + i * dx][y + i * dy].wordDirection.push(dir)
       }
     } catch (e) {
       alert(e)
@@ -389,6 +390,7 @@ function updateDispArr() {
       dispArr[i][j].letter = storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].letter
       for (k = 0; k < storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].wordIndex.length; k++) {
         dispArr[i][j].wordIndex.push(storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].wordIndex[k])
+        dispArr[i][j].wordDirection.push(storedSols[solType][chosenSolution].logicArr[storedSols[solType][chosenSolution].minX+i][storedSols[solType][chosenSolution].minY+j].wordDirection[k])
       }
     }
   }
@@ -404,6 +406,21 @@ function updateDispArr() {
         clueNum++
       }
     }
+  }
+
+  for (let i = 0; i < dispArr.length; i++) {
+    for (let j = 0; j < dispArr[0].length; j++) {
+      for (let k = 0; k < dispArr[i][j].wordIndex.length; k++) {
+        if (dispArr[i][j].hintNum != 0) {
+          hints[dispArr[i][j].wordIndex[k]].num = dispArr[i][j].hintNum
+          hints[dispArr[i][j].wordIndex[k]].dir = dispArr[i][j].wordDirection[k]
+        }
+      }
+    }
+  }
+
+  for (let i = 0; i < hints.length; i++) {
+    console.log("Word: " + words[i] + "\nHint: " + hints[i].sentence + "\nhintNum: " + hints[i].num + "\nhintDir: " + hints[i].dir + "\n\n\n\n\n")
   }
 
 setupCanvas()
@@ -628,9 +645,10 @@ class solutionState {
 }
 
 class gridPoint {
-  constructor(letter = 0, wordIndex = [], hintNum = 0) {
+  constructor(letter = 0, wordIndex = [], wordDirection = [], hintNum = 0) {
     this.letter = letter
     this.wordIndex = wordIndex
+    this.wordDirection = wordDirection
     this.hintNum = hintNum
     this.equals = function(otherGridPoint) {
       if (this.wordIndex.length != otherGridPoint.wordIndex.length) {
@@ -638,6 +656,9 @@ class gridPoint {
       }
       for (let i = 0; i < this.wordIndex.length; i++) {
         if (this.wordIndex[i] != otherGridPoint.wordIndex[i]) {
+          return false
+        }
+        if (this.wordDirection[i] != otherGridPoint.wordDirection[i]) {
           return false
         }
       }
