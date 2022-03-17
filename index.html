@@ -5,8 +5,8 @@
 <script>
   let numTableRows
   $(document).ready(function(){
-    $('.word, .hint').val('')
-    numTableRows = 1      // Tracks how many rows have been created to create unique ids
+    //$('.word, .hint').val('')
+    //numTableRows = 1      // Tracks how many rows have been created to create unique ids
     let myFocus = $(':focus') // Tracks what our current focus is
     let shiftPressed = false  // Tracks if shift is pressed
     // Handles any events on the table
@@ -49,18 +49,52 @@
         }
         // adds a new row if necessary
         if ($('#wordRow'+numTableRows).val() != "" || $('#hintRow'+numTableRows).val() != "") {
-          numTableRows++
-          $('table').append(`<tr>
-                               <td>
-                                 <input class="word" id="wordRow` + numTableRows + `" placeholder="Word" size="10">
-                               </td>
-                               <td>
-                                 <input class="hint" id="hintRow` + numTableRows + `" placeholder="Hint" size="60">
-                               </td>
-                             </tr>`)
+          addRow()
         }
       })
   })
+
+  // Performs action on page load
+  window.addEventListener('load', function(e) {
+    numTableRows = 1
+    if (sessionStorage.getItem("numTableRows") != null) {
+      // Not the first time loading in
+      for (let i = 1; i < sessionStorage.getItem("numTableRows"); i++) {
+        addRow()
+        $('#wordRow'+i).val(sessionStorage.getItem("wordRow"+i))
+        $('#hintRow'+i).val(sessionStorage.getItem("hintRow"+i))
+      }
+    } else {
+      // First time loading in
+    }
+  })
+
+  // Performs action on page unload
+  window.addEventListener('beforeunload', function(e) {
+    let numAdded = 1
+    // Saves the already input words and hints
+    for (let i = 1; i < numTableRows; i++) {
+      console.log($('#wordRow'+i).val())
+      if ($('#wordRow'+i).val() != undefined && $('#hintRow'+i).val() != undefined) {
+        sessionStorage.setItem("wordRow"+numAdded, $('#wordRow'+i).val())
+        sessionStorage.setItem("hintRow"+numAdded, $('#hintRow'+i).val())
+        numAdded++
+      }
+    }
+    sessionStorage.setItem("numTableRows", numAdded)
+  })
+
+  function addRow() {
+    numTableRows++
+    $('table').append(`<tr>
+                         <td>
+                           <input class="word" id="wordRow` + numTableRows + `" placeholder="Word" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" size="10">
+                         </td>
+                         <td>
+                           <input class="hint" id="hintRow` + numTableRows + `" placeholder="Hint" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" size="60">
+                         </td>
+                       </tr>`)
+  }
 </script>
 <!DOCTYPE html>
 <html>
@@ -70,8 +104,8 @@
 <!--  <input type="text" placeholder="Words to use seperated by a space" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" id="myInput" size="60"> -->
   <table style="margin-left:auto;margin-right:auto">
     <tr>
-        <td> <input class="word" id="wordRow1" placeholder="Word" size="10"> </td>
-        <td> <input class="hint" id="hintRow1" placeholder="Hint" size="60"> </td>
+        <td> <input class="word" id="wordRow1" placeholder="Word" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" size="10"> </td>
+        <td> <input class="hint" id="hintRow1" placeholder="Hint" onkeydown="if (event.keyCode == 13) document.getElementById('myButton').click()" size="60"> </td>
     </tr>
   </table>
   <button type="button" id="myButton" onclick="main();">Create</button>

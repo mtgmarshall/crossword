@@ -1,6 +1,8 @@
 
 let words                   // The user's input array of words for the crossword
 let hints                   // The user's input array of hints for the crossword
+let numAcross               // The # of hints corresponding to words going across
+let numDown                 // The # of hints corresponding to words going down
 let wordIndices             // The indices to reference the words array
 let gridCenter              // The center of logicArr (also just the total word length)
 let storedSols              // stores topFiveSols and worstSol
@@ -15,16 +17,19 @@ let canvasX                 // The width of the drawing canvas
 let canvasY                 // The height of the drawing canvas
 let graphic                 // The high-resolution graphic used for exporting the crossword
 let resMult = 4             // The increase in resolution from the canvas to the export
+let hintScalar = 4          // The amount textValue is scaled down for the hint section
 let squareHeight, squareWidth, textValue // drawing sizes used to draw the grid
 let numTries = 1000         // The amount of crossword generation attempts
 let sol                     // The current solution attempt
 let hideWords = false       // Used to decide if the words should be printed in draw
 
-// The primary flow of logic, runs when "Create" is clicked
-function main() {
+function setup() {
   noLoop()
   hideWords = false
+}
 
+// The primary flow of logic, runs when "Create" is clicked
+function main() {
   words = []
   hints = []
   wordIndices = []
@@ -39,12 +44,15 @@ function main() {
       wrd = undefined
       hnt = undefined
     }
-    if (wrd == undefined || hnt == undefined) {
+    if (wrd == undefined || hnt.sentence == undefined) {
       continue
-    } else if (wrd == "" || hnt == "") {
-      alert("A field (Row: " + (numValidRows + 1) + ") is empty!")
+    } else if (wrd == "" || hnt.sentence == "") {
+      alert("Row: " + (numValidRows + 1) + " is empty!")
       return
     }
+    // regex expression to match all non-alphanumeric characters in string, so that they can be removed
+    let regex = /[^A-Za-z0-9]/g
+    wrd = wrd.replace(regex, "")
     words.push(wrd)
     hints.push(hnt)
     wordIndices.push(numValidRows)
@@ -408,21 +416,32 @@ function updateDispArr() {
     }
   }
 
-  for (let i = 0; i < dispArr.length; i++) {
-    for (let j = 0; j < dispArr[0].length; j++) {
+  hintsAcross = []
+  hintsDown = []
+  numAcross = 0
+  numDown = 0
+
+  for (let i = 0; i < hints.length; i++) {
+    hints[i].num = 0
+  }
+
+  for (let j = 0; j < dispArr[0].length; j++) {
+    for (let i = 0; i < dispArr.length; i++) {
       for (let k = 0; k < dispArr[i][j].wordIndex.length; k++) {
         if (dispArr[i][j].hintNum != 0) {
           hints[dispArr[i][j].wordIndex[k]].num = dispArr[i][j].hintNum
           hints[dispArr[i][j].wordIndex[k]].dir = dispArr[i][j].wordDirection[k]
+          if (dispArr[i][j].wordDirection[k] == "across") {
+            numAcross++
+          } else if (dispArr[i][j].wordDirection[k] == "down") {
+            numDown++
+          } else {
+            alert("Error, no hint direction")
+          }
         }
       }
     }
   }
-
-  for (let i = 0; i < hints.length; i++) {
-    console.log("Word: " + words[i] + "\nHint: " + hints[i].sentence + "\nhintNum: " + hints[i].num + "\nhintDir: " + hints[i].dir + "\n\n\n\n\n")
-  }
-
 setupCanvas()
 }
 
@@ -481,8 +500,8 @@ function draw() {
 
   let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
   let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
-  squareWidth = canvasX / numCols / pixelDensity(); // Calculates the size of each grid for drawing
-  squareHeight = canvasY / numRows / pixelDensity();
+  squareWidth = canvasX / numCols // Calculates the size of each grid for drawing
+  squareHeight = canvasY / numRows
 
   textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
 
@@ -529,9 +548,6 @@ function createExportableImage() {
 
   let graphicX = canvasX * resMult
   let graphicY = canvasY * resMult
-  graphic = createGraphics(graphicX + resMult, graphicY + resMult)
-  graphic.textFont('Courier')
-  graphic.background(0)
 
   let numCols = storedSols[solType][chosenSolution].maxX - storedSols[solType][chosenSolution].minX + 1 // calculates the number of rows and columns based on the dimenions on dispArr
   let numRows = storedSols[solType][chosenSolution].maxY - storedSols[solType][chosenSolution].minY + 1
@@ -539,6 +555,29 @@ function createExportableImage() {
   squareHeight = graphicY / numRows;
 
   textValue = min(squareWidth, squareHeight) // Calculates the best text size to fit in the grid
+
+  let hintGridX = canvasX * resMult
+  textSize(textValue / hintScalar)
+  let numCharactersInRow = floor((hintGridX / 2) / (textWidth('A')))   // Used to calculate when a new line will be needed
+  let hintSpacing = textWidth('A') * 2.5
+  let linesAcross = 2           // linesAcross & linesDown are needed to create the graphicY length
+  let linesDown = 2
+  for (let i = 0; i < hints.length; i++) { // Loops through every hint, counting however many lines are needed
+    if (hints[i].num == 0) {
+      continue
+    }
+    if (hints[i].dir == "across") {
+      linesAcross += hints[i].getLines(numCharactersInRow)
+    } else {
+      linesDown += hints[i].getLines(numCharactersInRow)
+    }
+  }
+
+  let hintGridY = (max(linesAcross, linesDown) * hintSpacing)// * resMult
+
+  graphic = createGraphics(graphicX + 1, graphicY + resMult + hintGridY)
+  graphic.textFont('Courier')
+  graphic.background(0)
 
   graphic.fill(255)
   for (let i = 0; i < numCols; i++){ //Creates the grid
@@ -565,6 +604,31 @@ function createExportableImage() {
       }
     }
   }
+
+  graphic.fill(255)
+  graphic.rect(0, graphicY + resMult*2, hintGridX, hintGridY)
+  graphic.fill(0)
+  graphic.textSize(textValue / hintScalar * 2)
+  graphic.text("Across:", 0, graphicY + resMult * 2 + hintSpacing, hintGridX / 2)
+  graphic.text("Down:", hintGridX / 2, graphicY + resMult * 2 + hintSpacing, hintGridX / 2)
+  graphic.textSize(textValue / hintScalar)
+  let acrossCounter = 2
+  let downCounter = 2
+  for (let i = 1; i <= hints.length; i++) {
+    for (let j = 0; j < hints.length; j++) {
+      if (hints[j].num != i) {
+        continue
+      }
+      if (hints[j].dir == "across") {
+        graphic.text(hints[j].getClue(), 0, graphicY + resMult*2 + hintSpacing * acrossCounter, hintGridX/2)
+        acrossCounter += hints[j].getLines(numCharactersInRow)
+      } else {
+        graphic.text(hints[j].getClue(), hintGridX/2, graphicY + resMult*2 + hintSpacing * downCounter, hintGridX/2)
+        downCounter += hints[j].getLines(numCharactersInRow)
+      }
+    }
+  }
+
 }
 
 // Prints the 2d array as an alert message, primarily for debugging
@@ -672,5 +736,30 @@ class hint {
     this.sentence = sentence
     this.num = num
     this.dir = dir
+    this.getClue = function() {
+      return this.num + ": " + this.sentence
+    }
+    this.getLines = function(charsPerRow) {
+
+      let numLines = 0
+      let sentenceArray = this.getClue().split(" ")
+
+      let lineLength = sentenceArray.shift().length + 2
+      let prevLineLength = 0
+
+      while (sentenceArray.length > 0) {
+        numLines++
+        lineLength -= (prevLineLength + 1)
+        while (lineLength <= charsPerRow) {
+          prevLineLength = lineLength
+          if (sentenceArray.length > 0) {
+            lineLength += 1 + sentenceArray.shift().length
+          } else {
+            break
+          }
+        }
+      }
+      return numLines
+    }
   }
 }
